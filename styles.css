@@ -137,6 +137,16 @@ img {
   color: var(--text);
 }
 
+.logo-icon {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+.logo:hover .logo-icon {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
 .nav-toggle {
   display: none;
   flex-direction: column;
