@@ -67,22 +67,34 @@ const modalClose = $('.modal-close');
 const modalOverlay = $('.modal-overlay');
 
 function openPreview(src) {
-  if (!previewModal) return;
+  if (!previewModal || !previewFrame) return;
+  
+  // Try to load the PDF
   previewFrame.src = src;
   previewModal.classList.add('open');
   document.body.style.overflow = 'hidden';
+  
+  // Fallback: if PDF doesn't load, show error message
+  previewFrame.addEventListener('error', function handleError() {
+    showToast('Preview not available. Please download the e-book to view it.');
+    closePreview();
+    previewFrame.removeEventListener('error', handleError);
+  }, { once: true });
 }
 
 function closePreview() {
   if (!previewModal) return;
   previewModal.classList.remove('open');
-  previewFrame.src = '';
+  setTimeout(() => {
+    if (previewFrame) previewFrame.src = '';
+  }, 300);
   document.body.style.overflow = '';
 }
 
 if (previewBtn) {
   previewBtn.addEventListener('click', () => {
-    openPreview('origami book (8.3 x 11.7 in) (3).pdf');
+    // Encode filename with spaces for GitHub Pages
+    openPreview('origami%20book%20(8.3%20x%2011.7%20in)%20(3).pdf');
   });
 }
 
@@ -119,9 +131,12 @@ const observer = new IntersectionObserver((entries) => {
   });
 }, observerOptions);
 
-$$('.feature-card, .financial-card, .section-header').forEach(el => {
-  el.style.opacity = '0';
-  el.style.transform = 'translateY(20px)';
-  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-  observer.observe(el);
+// Wait for DOM to be fully loaded before observing
+window.addEventListener('DOMContentLoaded', () => {
+  $$('.feature-card, .financial-card, .section-header').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
 });
