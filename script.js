@@ -1,4 +1,4 @@
-// Basic interactivity for Origami Journey site
+// Professional interactivity for Origami Journey
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
@@ -7,29 +7,41 @@ const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 const navToggle = $(".nav-toggle");
 const navList = $(".nav-list");
 if (navToggle && navList) {
-  navToggle.addEventListener("click", () => {
+  navToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
     const open = navList.classList.toggle("open");
     navToggle.setAttribute("aria-expanded", String(open));
   });
+  
   // Close on outside click (mobile)
   document.addEventListener('click', (e) => {
-    if (!navList.contains(e.target) && !navToggle.contains(e.target)) {
+    if (navList.classList.contains('open') && 
+        !navList.contains(e.target) && 
+        !navToggle.contains(e.target)) {
       navList.classList.remove('open');
       navToggle.setAttribute('aria-expanded', 'false');
     }
   });
+  
+  // Close on nav link click (mobile)
+  $$('.nav-list a').forEach(link => {
+    link.addEventListener('click', () => {
+      navList.classList.remove('open');
+      navToggle.setAttribute('aria-expanded', 'false');
+    });
+  });
 }
 
 // Smooth scroll for nav links
-$$('.nav-list a').forEach(a => {
+$$('.nav-list a, a[href^="#"]').forEach(a => {
   a.addEventListener('click', e => {
+    const href = a.getAttribute('href');
+    if (!href || !href.startsWith('#')) return;
+    
     e.preventDefault();
-    const id = a.getAttribute('href');
-    const el = document.querySelector(id);
+    const el = document.querySelector(href);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      navList.classList.remove('open');
-      navToggle.setAttribute('aria-expanded', 'false');
     }
   });
 });
@@ -52,56 +64,64 @@ const previewBtn = $('#previewBtn');
 const previewModal = $('#previewModal');
 const previewFrame = $('#previewFrame');
 const modalClose = $('.modal-close');
+const modalOverlay = $('.modal-overlay');
 
 function openPreview(src) {
   if (!previewModal) return;
   previewFrame.src = src;
   previewModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
+
 function closePreview() {
   if (!previewModal) return;
   previewModal.classList.remove('open');
   previewFrame.src = '';
+  document.body.style.overflow = '';
 }
+
 if (previewBtn) {
   previewBtn.addEventListener('click', () => {
-    // Open the provided e-book PDF for preview
     openPreview('origami book (8.3 x 11.7 in) (3).pdf');
   });
 }
+
 if (modalClose) modalClose.addEventListener('click', closePreview);
-window.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
-previewModal?.addEventListener('click', e => { if (e.target === previewModal) closePreview(); });
+if (modalOverlay) modalOverlay.addEventListener('click', closePreview);
+window.addEventListener('keydown', e => { 
+  if (e.key === 'Escape') closePreview(); 
+});
 
 // Buy buttons
 $$('[data-buy], #buyBtn').forEach(btn => {
   btn.addEventListener('click', () => {
     // Payment integration placeholder
-    // Replace with real gateway initialization code
-    showToast('Redirecting to payment…');
-    // Example stubs
-    // initBkashCheckout({ amount: 80, item: 'Origami Journey e-book' });
-    // or initSSLCommerz({ amount: 80, item: 'Origami Journey e-book' });
+    showToast('Redirecting to payment gateway...');
+    
+    // TODO: Integrate bKash or SSLCommerz
+    // Example:
+    // initiatePayment({ amount: 80, product: 'Origami Journey E-Book' });
   });
 });
 
-// Color extraction placeholder from PDF
-// If you share the PDF path, we can programmatically extract a palette
-// and update CSS variables at runtime.
+// Scroll animations
+const observerOptions = {
+  threshold: 0.1,
+  rootMargin: '0px 0px -50px 0px'
+};
 
-// Palette loader: if colors.json exists, apply to CSS variables
-async function applyPalette() {
-  try {
-    const res = await fetch('colors.json', { cache: 'no-cache' });
-    if (!res.ok) return; // file may not exist yet
-    const palette = await res.json();
-    const root = document.documentElement;
-    for (const [key, value] of Object.entries(palette)) {
-      root.style.setProperty(`--${key}`, value);
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
     }
-    showToast('Theme updated from PDF palette');
-  } catch (e) {
-    // ignore
-  }
-}
-applyPalette();
+  });
+}, observerOptions);
+
+$$('.feature-card, .financial-card, .section-header').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  observer.observe(el);
+});
